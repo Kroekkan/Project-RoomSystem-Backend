@@ -1,4 +1,5 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Res, Req, UnauthorizedException } from '@nestjs/common';
+import type { Request, Response } from 'express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -13,8 +14,34 @@ export class UsersController {
   }
 
   @Post('login')
-  login(@Body() loginUserDto: LoginUserDto) {
-    return this.usersService.login(loginUserDto);
+  async login(
+    @Body() loginUserDto: LoginUserDto,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const token = await this.usersService.login(loginUserDto);
+
+    res.cookie("access_token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+    });
+    
+    return {
+      message: "Login success",
+    };
+    
+  }
+
+  @Get('me')
+  getProfile(@Req() req: Request) {
+    const token = req.cookies?.['access_token'];
+
+    if (!token) {
+      throw new UnauthorizedException('ยังไม่ได้เข้าสู่ระบบ');
+    }
+
+    return this.usersService.getProfileFromToken(token);
+
   }
 
 }

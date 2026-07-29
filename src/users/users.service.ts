@@ -47,10 +47,29 @@ export class UsersService {
       throw new UnauthorizedException('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
     }
 
-    const token = this.jwtService.sign({ userId: user.id, emsil: user.email })
+    const token = this.jwtService.sign({ userId: user.id, email: user.email, role: user.role })
 
-    return { access_token: token };
+    return token;
 
   }
 
+  async getProfileFromToken(token: string) {
+    try {
+      const payload = await this.jwtService.verifyAsync(token);
+
+      const user = await this.prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { id: true, email: true, role: true },
+      });
+
+      if (!user) {
+        throw new UnauthorizedException('ไม่พบผู้ใช้งาน')
+      }
+
+      return user;
+
+    } catch (error) {
+      throw new UnauthorizedException('Token ไม่ถูกต้องหรือหมดอายุ')
+    }
+  }
 }
