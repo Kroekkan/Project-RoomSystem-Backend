@@ -24,3 +24,25 @@ model User {
   branch          String
   role            Role         @default(USER)
 }
+
+model Room {
+    id        Int        @id @default(autoincrement())
+    name      String     @unique        // ชื่อห้อง เช่น "ม.1/1", "ม.3/5"
+    schedules Schedule[]                 // ความสัมพันธ์กับตาราง Schedule
+    createdAt DateTime   @default(now())
+    updatedAt DateTime   @updatedAt
+}
+
+model Schedule {
+    id        Int      @id @default(autoincrement())
+    roomId    Int                        
+    room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+    day       String                     
+    period    Int                        
+    subject   String                     
+    teacher   String   @default("-")     
+    classroom String   @default("-")     
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+    @@unique([roomId, day, period])      
+}

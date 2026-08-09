@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Res, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Post, Body, Res, Req, UnauthorizedException, Param, Delete } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -18,7 +18,7 @@ export class UsersController {
     @Body() loginUserDto: LoginUserDto,
     @Res({ passthrough: true }) res: Response,
   ) {
-    const token = await this.usersService.login(loginUserDto);
+    const { token, role } = await this.usersService.login(loginUserDto);
 
     res.cookie("access_token", token, {
       httpOnly: true,
@@ -28,6 +28,7 @@ export class UsersController {
     
     return {
       message: "Login success",
+      role,
     };
     
   }
@@ -54,6 +55,16 @@ export class UsersController {
 
     return { message: 'ออกจากระบบสำเร็จ' };
 
+  }
+
+  @Get('checkuser')
+  getAllUser() {
+    return this.usersService.findAll();
+  }
+
+  @Delete(':id')
+  DeleteId(@Param('id') id: string) {
+    return this.usersService.findOne(Number(id))
   }
 
 }

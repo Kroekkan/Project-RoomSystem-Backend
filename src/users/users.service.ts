@@ -51,7 +51,7 @@ export class UsersService {
 
     const token = this.jwtService.sign({ userId: user.id, email: user.email, role: user.role })
 
-    return token;
+    return { token, role: user.role };
 
   }
 
@@ -80,4 +80,13 @@ export class UsersService {
       throw new UnauthorizedException('Token ไม่ถูกต้องหรือหมดอายุ')
     }
   }
+
+  findAll() {
+    return this.prisma.user.findMany();
+  }
+
+  findOne(id: number) {
+    return this.prisma.user.delete({where: { id }})
+  }
+
 }
