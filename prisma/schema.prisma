@@ -16,6 +16,13 @@ enum Role {
   ADMIN
 }
 
+enum BookingStatus {
+  PENDING   
+  APPROVED  
+  REJECTED  
+  CANCELLED
+}
+
 model User {
   id              Int           @id @default(autoincrement())
   name            String
@@ -25,24 +32,46 @@ model User {
   role            Role         @default(USER)
 }
 
+
 model Room {
-    id        Int        @id @default(autoincrement())
-    name      String     @unique        // ชื่อห้อง เช่น "ม.1/1", "ม.3/5"
-    schedules Schedule[]                 // ความสัมพันธ์กับตาราง Schedule
-    createdAt DateTime   @default(now())
-    updatedAt DateTime   @updatedAt
+  id        Int        @id @default(autoincrement())
+  name      String     @unique
+  schedules Schedule[]
+  bookings  Booking[] 
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 }
 
+
 model Schedule {
-    id        Int      @id @default(autoincrement())
-    roomId    Int                        
-    room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
-    day       String                     
-    period    Int                        
-    subject   String                     
-    teacher   String   @default("-")     
-    classroom String   @default("-")     
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    @@unique([roomId, day, period])      
+  id        Int      @id @default(autoincrement())
+  roomId    Int
+  room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  day       String
+  period    Int
+  subject   String
+  teacher   String   @default("-")
+  classroom String   @default("-")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([roomId, day, period])
+}
+
+model Booking {
+  id        Int           @id @default(autoincrement())
+  roomId    Int
+  room      Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId    Int?        
+  userName  String   
+  userEmail String?     
+  phone     String?     
+  lineId    String?   
+  day       String       
+  date      String       
+  period    Int           
+  purpose   String       
+  status    BookingStatus @default(PENDING) 
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+  @@unique([roomId, date, period])
 }
