@@ -1,9 +1,14 @@
-import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../prisma/prisma.service'; // แก้ไข path ตามโครงสร้างของคุณ
+import { Injectable, BadRequestException, NotFoundException, forwardRef, Inject } from '@nestjs/common';
+import { PrismaService } from '../prisma/prisma.service';
+import { LineService } from '../line/line.service';
 
 @Injectable()
 export class BookingsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    @Inject(forwardRef(() => LineService))
+    private lineService: LineService,
+  ) {}
 
   // 1. ดึงรายการจองของห้อง ตามช่วงวันที่ (สำหรับหน้า User แสดงตาราง)
   async getBookingsByRoom(roomId: number, startDate: string, endDate: string) {
@@ -11,13 +16,13 @@ export class BookingsService {
       where: {
         roomId,
         date: { gte: startDate, lte: endDate },
-        status: { in: ['PENDING', 'APPROVED'] }, // ดึงเฉพาะรออนุมัติ และ อนุมัติแล้ว
+        status: { in: ['PENDING', 'APPROVED'] },
       },
       orderBy: [{ date: 'asc' }, { period: 'asc' }],
     });
   }
 
-  // 2. ส่งคำขอจองห้องใหม่ (สำหรับ User)
+    // 2. ส่งคำขอจองห้องใหม่ (สำหรับ User)
   async createBooking(data: {
     roomId: number;
     userId?: number;
@@ -30,7 +35,6 @@ export class BookingsService {
     period: number;
     purpose: string;
   }) {
-    // เช็กว่าช่องนี้มีคนจองไว้แล้วหรือไม่ (สถานะ PENDING หรือ APPROVED)
     const existing = await this.prisma.booking.findFirst({
       where: {
         roomId: data.roomId,
@@ -44,7 +48,7 @@ export class BookingsService {
       throw new BadRequestException('คาบเวลานี้มีการจองหรืออยู่ระหว่างรอการอนุมัติอยู่แล้ว');
     }
 
-    return this.prisma.booking.create({
+    const booking = await this.prisma.booking.create({
       data: {
         roomId: data.roomId,
         userId: data.userId,
@@ -56,21 +60,49 @@ export class BookingsService {
         date: data.date,
         period: data.period,
         purpose: data.purpose,
-        status: 'PENDING', // ค่าเริ่มต้นเป็นรออนุมัติ
+        status: 'PENDING',
       },
+      include: { room: true },
     });
+
+    // 🟢 ครอบ try...catch ป้องกันไม่ให้ LINE Error ทำระบบจองห้องพัง
+    if (booking.lineId) {
+      try {
+        await this.lineService.sendBookingStatusCard(booking.lineId, {
+          roomName: booking.room.name,
+          category: booking.room.category,
+          bookingId: booking.id,
+          day: booking.day,
+          date: booking.date,
+          period: booking.period,
+          status: booking.status,
+        });
+      } catch (lineErr: any) {
+        console.error('LINE Notification Error (แต่การจองสำเร็จแล้ว):', lineErr?.message || lineErr);
+      }
+    }
+
+    return booking;
   }
 
-  // 3. ดึงรายการจองทั้งหมดที่รออนุมัติ (สำหรับหน้า Admin ตรวจสอบ)
-  async getPendingBookings() {
+  // 3. ดึงรายการจองทั้งหมด ทุกสถานะ (สำหรับหน้า Admin)
+  async getAllBookings() {
     return this.prisma.booking.findMany({
-      where: { status: 'PENDING' },
-      include: { room: true }, // ดึงข้อมูลห้องมาด้วย
+      include: { room: true },
       orderBy: { createdAt: 'desc' },
     });
   }
 
-  // 4. Admin อนุมัติ หรือ ปฏิเสธ การจอง
+  // 4. ดึงรายการจองเฉพาะที่รออนุมัติ
+  async getPendingBookings() {
+    return this.prisma.booking.findMany({
+      where: { status: 'PENDING' },
+      include: { room: true },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  // 🟢 5. Admin อนุมัติ หรือ ปฏิเสธ การจอง (เพิ่มการส่งแจ้งเตือนเข้า LINE)
   async updateBookingStatus(id: number, status: 'APPROVED' | 'REJECTED' | 'CANCELLED') {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
 
@@ -78,13 +110,38 @@ export class BookingsService {
       throw new NotFoundException(`ไม่พบรายการจอง ID: ${id}`);
     }
 
-    return this.prisma.booking.update({
+    const updatedBooking = await this.prisma.booking.update({
       where: { id },
       data: { status },
+      include: { room: true }, // 🟢 include ข้อมูลห้องเพิ่มเติม
     });
+
+    // 🟢 ส่งการ์ดแจ้งเตือนสถานะใหม่เข้า LINE ของผู้ใช้ทันที
+    if (updatedBooking.lineId) {
+      await this.lineService.sendBookingStatusCard(updatedBooking.lineId, {
+        roomName: updatedBooking.room.name,
+        category: updatedBooking.room.category,
+        bookingId: updatedBooking.id,
+        day: updatedBooking.day,
+        date: updatedBooking.date,
+        period: updatedBooking.period,
+        status: updatedBooking.status,
+      });
+    }
+
+    return updatedBooking;
   }
 
-  // 5. ดึงรายการจองตาม ID ของผู้ใช้งาน (ดูประวัติการจองตัวเอง)
+  // 6. ลบรายการจอง
+  async deleteBooking(id: number) {
+    try {
+      return await this.prisma.booking.delete({ where: { id } });
+    } catch {
+      throw new NotFoundException(`ไม่พบรายการจอง ID: ${id}`);
+    }
+  }
+
+  // 7. ดึงรายการจองตาม ID ของผู้ใช้งาน
   async getBookingsByUserId(userId: number) {
     return this.prisma.booking.findMany({
       where: { userId },
@@ -93,14 +150,12 @@ export class BookingsService {
     });
   }
 
-  // เพิ่มฟังก์ชันดึงข้อมูลรวม 2 ตาราง
+  // 8. ดึงข้อมูลรวม 2 ตาราง (ตารางสอนประจำ + การจอง)
   async getFullRoomSchedule(roomId: number, startDate: string, endDate: string) {
-    // 1. ดึงตารางเรียนประจำที่ Admin บันทึกไว้
     const schedules = await this.prisma.schedule.findMany({
       where: { roomId },
     });
 
-    // 2. ดึงรายการจองจากฝั่ง User
     const bookings = await this.prisma.booking.findMany({
       where: {
         roomId,
@@ -109,9 +164,38 @@ export class BookingsService {
       },
     });
 
-    return {
-      schedules, // ข้อมูลตารางสอน Admin
-      bookings,  // ข้อมูลการจอง User
-    };
+    return { schedules, bookings };
+  }
+
+  // 9. ดึง booking ตาม id พร้อมข้อมูลห้อง (ใช้ในระบบยกเลิกผ่าน LINE)
+  async findById(id: number) {
+    return this.prisma.booking.findUnique({
+      where: { id },
+      include: { room: true },
+    });
+  }
+
+  // 🟢 10. ยกเลิก booking (ใช้ในระบบยกเลิกผ่าน LINE)
+  async cancel(id: number) {
+    const updatedBooking = await this.prisma.booking.update({
+      where: { id },
+      data: { status: 'CANCELLED' },
+      include: { room: true },
+    });
+
+    // 🟢 อัปเดตส่งการ์ดสถานะใหม่กลับเข้า LINE
+    if (updatedBooking.lineId) {
+      await this.lineService.sendBookingStatusCard(updatedBooking.lineId, {
+        roomName: updatedBooking.room.name,
+        category: updatedBooking.room.category,
+        bookingId: updatedBooking.id,
+        day: updatedBooking.day,
+        date: updatedBooking.date,
+        period: updatedBooking.period,
+        status: updatedBooking.status,
+      });
+    }
+
+    return updatedBooking;
   }
 }

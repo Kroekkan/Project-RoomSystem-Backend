@@ -1,12 +1,17 @@
-import { Controller, Get, Post, Body, Res, Req, UnauthorizedException, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Res, Req, UnauthorizedException, Param, Delete, UseGuards, Patch } from '@nestjs/common';
 import type { Request, Response } from 'express';
 import { UsersService } from './users.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
+import { AuthGuard } from '@nestjs/passport';
+import { JwtService } from '@nestjs/jwt';
 
 @Controller('users')
 export class UsersController {
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly jwtService: JwtService
+  ) {}
 
   @Post('create')
   create(@Body() createUserDto: CreateUserDto) {
@@ -65,6 +70,42 @@ export class UsersController {
   @Delete(':id')
   DeleteId(@Param('id') id: string) {
     return this.usersService.findOne(Number(id))
+  }
+
+  @Patch(':id')
+  updateUser(
+    @Param('id') id: string,
+    @Body() body: { name?: string; email?: string; branch?: string; role?: string },
+  ) {
+    return this.usersService.updateUser(Number(id), body);
+  }
+
+  @Get('google')
+  @UseGuards(AuthGuard('google'))
+  async googleAuth() {}
+
+  @Get('google/callback')
+  @UseGuards(AuthGuard('google'))
+  async googleAuthCallback(
+      @Req() req, 
+      @Res({ passthrough: true }) res: Response,
+    ) {
+    const googleUser = req.user;
+    const user = await this.usersService.findOrCreateGoogleUser(googleUser);
+    const token = this.jwtService.sign({
+      userId: user.id,
+      email: user.email,
+      role: user.role,
+    });
+
+    res.cookie("access_token", token, {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+    });
+
+    res.redirect(`${process.env.FRONT_URL}/`);
+
   }
 
 }

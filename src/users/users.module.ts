@@ -5,6 +5,7 @@ import { UsersController } from './users.controller';
 import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { GoogleStrategy } from './google.strategy';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       }),
     }),
   ],
-  providers: [UsersService, PrismaService, JwtStrategy],
+  providers: [UsersService, PrismaService, JwtStrategy, GoogleStrategy],
   controllers: [UsersController],
   exports: [JwtModule],
 })

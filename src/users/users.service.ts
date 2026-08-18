@@ -1,8 +1,9 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common';
+import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
 import { JwtService } from '@nestjs/jwt'
+import { Role } from '@prisma/client';
 import * as bcrypt from 'bcrypt'
 
 @Injectable()
@@ -16,6 +17,7 @@ export class UsersService {
     const existingUser = await this.prisma.user.findUnique({
       where: { email: createUserDto.email },
     });
+    
     if (existingUser) {
       throw new ConflictException('อีเมลนี้ถูกใช้งานแล้ว');
     }
@@ -40,8 +42,13 @@ export class UsersService {
     const user = await this.prisma.user.findUnique({
       where: { email: loginUserDto.email },
     });
+
     if (!user) {
       throw new UnauthorizedException('อีเมลหรือรหัสผ่านไม่ถูกต้อง');
+    }
+
+    if (!user.password) {
+      throw new UnauthorizedException('บัญชีนี้สมัครผ่าน Google กรุณาเข้าสู่ระบบด้วย Google');
     }
 
     const isPasswordVaild = await bcrypt.compare(loginUserDto.password, user.password);
@@ -87,6 +94,55 @@ export class UsersService {
 
   findOne(id: number) {
     return this.prisma.user.delete({where: { id }})
+  }
+
+  async findOrCreateGoogleUser(googleUser: { email: string; name: string; picture?: string }) {
+    let user = await this.prisma.user.findUnique({
+      where: { email: googleUser.email },
+    });
+
+    if (user) {
+      if (user.provider === 'local') {
+          user = await this.prisma.user.update({
+          where: { email: googleUser.email },
+          data: {
+             picture: googleUser.picture ?? user.picture,
+          },
+        });
+      }
+      return user;
+    }
+
+    return this.prisma.user.create({
+      data: {
+         email: googleUser.email,
+         name: googleUser.name,
+         picture: googleUser.picture,
+         branch: 'กรุณาใส่สาขา',
+         role: 'USER',
+         provider: 'google',
+         password: null,
+      }
+    })
+  }
+
+  async updateUser(
+    id: number,
+    data: { name?: string; email?: string; branch?: string; role?: string },
+  ) {
+    try {
+      return await this.prisma.user.update({
+        where: { id },
+        data: {
+          name: data.name,
+          email: data.email,
+          branch: data.branch,
+          role: data.role ? (data.role as Role) : undefined, 
+        },
+      });
+    } catch (error) {
+      throw new NotFoundException(`ไม่พบผู้ใช้งาน ID: ${id}`);
+    }
   }
 
 }

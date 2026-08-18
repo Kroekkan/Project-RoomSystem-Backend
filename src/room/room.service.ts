@@ -5,15 +5,23 @@ import { PrismaService } from '../prisma/prisma.service';
 export class RoomsService {
     constructor(private prisma: PrismaService) {}
 
+    // 🏢 ค้นหาห้อง (เรียงตาม อาคาร -> ชื่อห้อง)
     async findAllRooms() {
         return this.prisma.room.findMany({
-            orderBy: { name: 'asc' },
+            orderBy: [{ building: 'asc' }, { name: 'asc' }],
             include: { _count: { select: { schedules: true } } },
         });
     }
 
-    async createRoom(name: string) {
-        return this.prisma.room.create({ data: { name } });
+    // 🏢 ปรับเพิ่มห้อง ให้รับ building ด้วย
+    async createRoom(name: string, building?: string, category?: string) {
+        return this.prisma.room.create({
+            data: {
+                name,
+                building: building || 'อาคาร 1',
+                category: category || 'ห้องเรียนทั่วไป',
+            },
+        });
     }
 
     // ลบห้อง (Cascade ลบตารางทั้งหมดของห้องนั้นด้วย)
@@ -61,5 +69,17 @@ export class RoomsService {
     // ลบคาบเรียน
     async deleteSchedule(id: number) {
         return this.prisma.schedule.delete({ where: { id } });
+    }
+
+    // 🏢 เพิ่มฟังก์ชันแก้ไขชื่อ อาคาร และหมวดหมู่ห้อง
+    async updateRoom(id: number, data: { name?: string; building?: string; category?: string }) {
+        try {
+            return await this.prisma.room.update({
+                where: { id },
+                data,
+            });
+        } catch {
+            throw new NotFoundException(`ไม่พบห้อง ID: ${id}`);
+        }
     }
 }

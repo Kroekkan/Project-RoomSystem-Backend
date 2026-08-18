@@ -27,17 +27,24 @@ model User {
   id              Int           @id @default(autoincrement())
   name            String
   email           String        @unique
-  password        String
+  password        String?
   branch          String
   role            Role         @default(USER)
+  provider String   @default("local")
+  picture  String?  
+  lineId    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 
 model Room {
   id        Int        @id @default(autoincrement())
   name      String     @unique
+  category  String     @default("ห้องเรียนทั่วไป")
+  building  String     @default("อาคาร 1")
   schedules Schedule[]
-  bookings  Booking[] 
+  bookings  Booking[]
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
 }
@@ -73,5 +80,4 @@ model Booking {
   status    BookingStatus @default(PENDING) 
   createdAt DateTime      @default(now())
   updatedAt DateTime      @updatedAt
-  @@unique([roomId, date, period])
 }

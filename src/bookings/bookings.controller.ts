@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete, // 👈 1. เพิ่ม Delete ที่นี่
   Body,
   Param,
   Query,
@@ -13,6 +14,12 @@ import { BookingsService } from './bookings.service';
 @Controller('bookings') // Base URL: http://localhost:4000/bookings
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
+
+  // 🆕 GET /bookings -> ดึงรายการจองทั้งหมด (สำหรับหน้า Admin สลับดูตามแท็บ)
+  @Get()
+  getAllBookings() {
+    return this.bookingsService.getAllBookings();
+  }
 
   // GET /bookings/room/1?startDate=2026-08-10&endDate=2026-08-14
   // ดึงรายการจองตามห้องและวันที่ (สำหรับตารางหน้าเว็บ)
@@ -61,6 +68,13 @@ export class BookingsController {
     @Body() body: { status: 'APPROVED' | 'REJECTED' | 'CANCELLED' },
   ) {
     return this.bookingsService.updateBookingStatus(id, body.status);
+  }
+
+  // 🆕 DELETE /bookings/:id
+  // ลบรายการจองออกจากระบบ
+  @Delete(':id')
+  deleteBooking(@Param('id', ParseIntPipe) id: number) {
+    return this.bookingsService.deleteBooking(id);
   }
 
   // GET /bookings/user/:userId
