@@ -24,15 +24,10 @@ export class UsersController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const { token, role } = await this.usersService.login(loginUserDto);
-
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: false,
-      sameSite: "lax",
-    });
     
     return {
       message: "Login success",
+      token,
       role,
     };
     

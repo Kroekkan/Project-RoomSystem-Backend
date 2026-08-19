@@ -73,7 +73,8 @@ export class UsersService {
           name: true,
           email: true,
           branch: true,
-          role: true
+          role: true,
+          picture: true,
         },
       });
 
