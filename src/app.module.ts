@@ -8,6 +8,8 @@ import { BookingsModule } from './bookings/bookings.module';
 import { LineModule } from './line/line.module';
 import { LineAuthController } from './auth/line-auth.controller';
 import { LineAuthService } from './auth/line-auth.service';
+import { PublicPostsModule } from './public-posts/public-posts.module';
+import { PrismaModule } from './prisma/prisma.module';
 
 @Module({
   imports: [
@@ -15,7 +17,9 @@ import { LineAuthService } from './auth/line-auth.service';
     UsersModule,
     RoomsModule,
     BookingsModule,
+    PrismaModule,
     LineModule,
+    PublicPostsModule,
   ],
   controllers: [AppController, LineAuthController],
   providers: [AppService, LineAuthService],

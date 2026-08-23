@@ -1,11 +1,12 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { PassportStrategy } from "@nestjs/passport";
 import { ExtractJwt, Strategy } from "passport-jwt";
 import { Request } from "express";
+import { PrismaService } from "../prisma/prisma.service";
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
-    constructor() {
+    constructor(private prisma: PrismaService) {
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
                 (req: Request) => {
@@ -16,7 +17,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         });
     }
 
-    async validate(payload: any ) {
-        return { userId: payload.userId, email: payload.email };
+    async validate(payload: any) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: payload.userId },
+            select: { id: true, email: true, role: true },
+        });
+
+        if (!user) {
+            throw new UnauthorizedException('ไม่พบผู้ใช้งานนี้ในระบบ');
+        }
+
+        return { userId: user.id, email: user.email, role: user.role };
     }
 }

@@ -6,6 +6,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { JwtStrategy } from './jwt.strategy';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { GoogleStrategy } from './google.strategy';
+import { PrismaModule } from 'src/prisma/prisma.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { GoogleStrategy } from './google.strategy';
         signOptions: { expiresIn: '1d' },
       }),
     }),
+    PrismaModule,
   ],
   providers: [UsersService, PrismaService, JwtStrategy, GoogleStrategy],
   controllers: [UsersController],
