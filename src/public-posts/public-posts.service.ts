@@ -29,7 +29,12 @@ export class PublicPostsService {
 
   create(dto: CreatePublicPostDto, authorId: number) {
     return this.prisma.publicPost.create({
-      data: { ...dto, authorId },
+      data: {
+        ...dto,
+        startDate: dto.startDate ? new Date(dto.startDate) : null,
+        endDate: dto.endDate ? new Date(dto.endDate) : null,
+        authorId,
+      },
       include: { author: { select: { id: true, name: true, picture: true } } },
     });
   }

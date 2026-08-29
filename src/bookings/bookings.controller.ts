@@ -3,15 +3,19 @@ import {
   Get,
   Post,
   Patch,
-  Delete, // 👈 1. เพิ่ม Delete ที่นี่
+  Delete,
   Body,
+  Req,
   Param,
   Query,
   ParseIntPipe,
+  UseGuards,
 } from '@nestjs/common';
 import { BookingsService } from './bookings.service';
+import { JwtAuthGuard } from 'src/users/jwt-auth.guard';
+import { CheckInDto, CheckOutDto } from './checkin-checkout.dto';
 
-@Controller('bookings') // Base URL: http://localhost:4000/bookings
+@Controller('bookings')
 export class BookingsController {
   constructor(private readonly bookingsService: BookingsService) {}
 
@@ -46,7 +50,7 @@ export class BookingsController {
       lineId?: string;
       day: string;
       date: string;
-      period: number;
+      period: string;
       purpose: string;
     },
   ) {
@@ -93,4 +97,29 @@ export class BookingsController {
   ) {
     return this.bookingsService.getFullRoomSchedule(roomId, startDate, endDate);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/checkin')
+  async checkIn(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CheckInDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+    return this.bookingsService.checkIn(id, userId, isAdmin, dto.time);
+  }
+  
+  @UseGuards(JwtAuthGuard)
+  @Patch(':id/checkout')
+  async checkOut(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: CheckOutDto,
+    @Req() req: any,
+  ) {
+    const userId = req.user.id;
+    const isAdmin = req.user.role === 'ADMIN';
+    return this.bookingsService.checkOut(id, userId, isAdmin, dto.time);
+  }
+
 }

@@ -44,7 +44,7 @@ export class RoomsService {
     // เพิ่ม/แก้ไขคาบเรียน (Upsert)
     async upsertSchedule(
         roomId: number,
-        data: { day: string; period: number; subject: string; teacher: string; classroom: string },
+        data: { day: string; period: string; subject: string; teacher: string; classroom: string },
     ) {
         return this.prisma.schedule.upsert({
             where: {

@@ -30,12 +30,15 @@ model User {
   password        String?
   branch          String
   role            Role         @default(USER)
-  provider String   @default("local")
-  picture  String?  
-  lineId    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  publicPosts PublicPost[]
+  provider        String       @default("local")
+  picture         String?  
+  lineId          String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+  publicPosts     PublicPost[]
+  background      String       @default("#f3f4f6")
+  navbar          String       @default("#111827")
+  header          String       @default("#343a40")
 }
 
 
@@ -56,7 +59,7 @@ model Schedule {
   roomId    Int
   room      Room     @relation(fields: [roomId], references: [id], onDelete: Cascade)
   day       String
-  period    Int
+  period    String
   subject   String
   teacher   String   @default("-")
   classroom String   @default("-")
@@ -66,21 +69,23 @@ model Schedule {
 }
 
 model Booking {
-  id        Int           @id @default(autoincrement())
-  roomId    Int
-  room      Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
-  userId    Int?        
-  userName  String   
-  userEmail String?     
-  phone     String?     
-  lineId    String?   
-  day       String       
-  date      String       
-  period    Int           
-  purpose   String       
-  status    BookingStatus @default(PENDING) 
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
+  id            Int           @id @default(autoincrement())
+  roomId        Int
+  room          Room          @relation(fields: [roomId], references: [id], onDelete: Cascade)
+  userId        Int?        
+  userName      String   
+  userEmail     String?     
+  phone         String?     
+  lineId        String?   
+  day           String       
+  date          String  
+  checkInTime   DateTime?
+  checkOutTime  DateTime?
+  period        String           
+  purpose       String       
+  status        BookingStatus @default(PENDING) 
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
 }
 
 enum PostCategory {
@@ -97,6 +102,9 @@ model PublicPost {
   title      String
   message    String
   location   String?
+  imageUrl   String?      @db.Text
+  startDate  DateTime?
+  endDate    DateTime?
   resolved   Boolean      @default(false)
   authorId   Int
   author     User         @relation(fields: [authorId], references: [id])

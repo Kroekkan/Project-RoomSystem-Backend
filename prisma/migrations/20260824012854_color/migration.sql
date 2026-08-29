@@ -1,0 +1,4 @@
+-- AlterTable
+ALTER TABLE "User" ADD COLUMN     "background" TEXT NOT NULL DEFAULT 'gray-100',
+ADD COLUMN     "head4er" TEXT NOT NULL DEFAULT '#343a40',
+ADD COLUMN     "navbar" TEXT NOT NULL DEFAULT 'gray-900';

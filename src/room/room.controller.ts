@@ -29,7 +29,7 @@ export class RoomsController {
     @Post(':id/schedules')
     upsertSchedule(
         @Param('id') id: string,
-        @Body() body: { day: string; period: number; subject: string; teacher: string; classroom: string },
+        @Body() body: { day: string; period: string; subject: string; teacher: string; classroom: string },
     ) {
         return this.roomsService.upsertSchedule(Number(id), body);
     }

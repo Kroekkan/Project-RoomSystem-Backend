@@ -18,4 +18,15 @@ export class CreatePublicPostDto {
   @IsString()
   @MaxLength(100)
   "location"?: string;
+
+  @IsOptional()
+  @IsString()
+  "imageUrl"?: string;
+  
+  @IsOptional()
+  "startDate"?: string;
+
+  @IsOptional()
+  "endDate"?: string;
+
 }

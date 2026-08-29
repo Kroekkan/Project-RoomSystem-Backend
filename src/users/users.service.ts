@@ -75,6 +75,9 @@ export class UsersService {
           branch: true,
           role: true,
           picture: true,
+          background: true,
+          navbar: true,
+          header: true,
         },
       });
 

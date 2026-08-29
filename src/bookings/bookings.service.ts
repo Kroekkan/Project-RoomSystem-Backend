@@ -1,4 +1,11 @@
-import { Injectable, BadRequestException, NotFoundException, forwardRef, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  NotFoundException,
+  forwardRef,
+  Inject,
+  ForbiddenException,
+} from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { LineService } from '../line/line.service';
 
@@ -10,8 +17,11 @@ export class BookingsService {
     private lineService: LineService,
   ) {}
 
-  // 1. ดึงรายการจองของห้อง ตามช่วงวันที่ (สำหรับหน้า User แสดงตาราง)
-  async getBookingsByRoom(roomId: number, startDate: string, endDate: string) {
+  async getBookingsByRoom(
+    roomId: number,
+    startDate: string,
+    endDate: string,
+  ) {
     return this.prisma.booking.findMany({
       where: {
         roomId,
@@ -22,7 +32,6 @@ export class BookingsService {
     });
   }
 
-    // 2. ส่งคำขอจองห้องใหม่ (สำหรับ User)
   async createBooking(data: {
     roomId: number;
     userId?: number;
@@ -32,7 +41,7 @@ export class BookingsService {
     lineId?: string;
     day: string;
     date: string;
-    period: number;
+    period: string;
     purpose: string;
   }) {
     const existing = await this.prisma.booking.findFirst({
@@ -45,7 +54,9 @@ export class BookingsService {
     });
 
     if (existing) {
-      throw new BadRequestException('คาบเวลานี้มีการจองหรืออยู่ระหว่างรอการอนุมัติอยู่แล้ว');
+      throw new BadRequestException(
+        'คาบเวลานี้มีการจองหรืออยู่ระหว่างรอการอนุมัติอยู่แล้ว',
+      );
     }
 
     const booking = await this.prisma.booking.create({
@@ -65,7 +76,6 @@ export class BookingsService {
       include: { room: true },
     });
 
-    // 🟢 ครอบ try...catch ป้องกันไม่ให้ LINE Error ทำระบบจองห้องพัง
     if (booking.lineId) {
       try {
         await this.lineService.sendBookingStatusCard(booking.lineId, {
@@ -76,16 +86,20 @@ export class BookingsService {
           date: booking.date,
           period: booking.period,
           status: booking.status,
+          checkInTime: booking.checkInTime,
+          checkOutTime: booking.checkOutTime,
         });
       } catch (lineErr: any) {
-        console.error('LINE Notification Error (แต่การจองสำเร็จแล้ว):', lineErr?.message || lineErr);
+        console.error(
+          'LINE Notification Error (แต่การจองสำเร็จแล้ว):',
+          lineErr?.message || lineErr,
+        );
       }
     }
 
     return booking;
   }
 
-  // 3. ดึงรายการจองทั้งหมด ทุกสถานะ (สำหรับหน้า Admin)
   async getAllBookings() {
     return this.prisma.booking.findMany({
       include: { room: true },
@@ -93,7 +107,6 @@ export class BookingsService {
     });
   }
 
-  // 4. ดึงรายการจองเฉพาะที่รออนุมัติ
   async getPendingBookings() {
     return this.prisma.booking.findMany({
       where: { status: 'PENDING' },
@@ -102,8 +115,10 @@ export class BookingsService {
     });
   }
 
-  // 🟢 5. Admin อนุมัติ หรือ ปฏิเสธ การจอง (เพิ่มการส่งแจ้งเตือนเข้า LINE)
-  async updateBookingStatus(id: number, status: 'APPROVED' | 'REJECTED' | 'CANCELLED') {
+  async updateBookingStatus(
+    id: number,
+    status: 'APPROVED' | 'REJECTED' | 'CANCELLED',
+  ) {
     const booking = await this.prisma.booking.findUnique({ where: { id } });
 
     if (!booking) {
@@ -113,10 +128,9 @@ export class BookingsService {
     const updatedBooking = await this.prisma.booking.update({
       where: { id },
       data: { status },
-      include: { room: true }, // 🟢 include ข้อมูลห้องเพิ่มเติม
+      include: { room: true },
     });
 
-    // 🟢 ส่งการ์ดแจ้งเตือนสถานะใหม่เข้า LINE ของผู้ใช้ทันที
     if (updatedBooking.lineId) {
       await this.lineService.sendBookingStatusCard(updatedBooking.lineId, {
         roomName: updatedBooking.room.name,
@@ -126,13 +140,14 @@ export class BookingsService {
         date: updatedBooking.date,
         period: updatedBooking.period,
         status: updatedBooking.status,
+        checkInTime: updatedBooking.checkInTime,
+        checkOutTime: updatedBooking.checkOutTime,
       });
     }
 
     return updatedBooking;
   }
 
-  // 6. ลบรายการจอง
   async deleteBooking(id: number) {
     try {
       return await this.prisma.booking.delete({ where: { id } });
@@ -141,7 +156,6 @@ export class BookingsService {
     }
   }
 
-  // 7. ดึงรายการจองตาม ID ของผู้ใช้งาน
   async getBookingsByUserId(userId: number) {
     return this.prisma.booking.findMany({
       where: { userId },
@@ -150,8 +164,11 @@ export class BookingsService {
     });
   }
 
-  // 8. ดึงข้อมูลรวม 2 ตาราง (ตารางสอนประจำ + การจอง)
-  async getFullRoomSchedule(roomId: number, startDate: string, endDate: string) {
+  async getFullRoomSchedule(
+    roomId: number,
+    startDate: string,
+    endDate: string,
+  ) {
     const schedules = await this.prisma.schedule.findMany({
       where: { roomId },
     });
@@ -167,7 +184,6 @@ export class BookingsService {
     return { schedules, bookings };
   }
 
-  // 9. ดึง booking ตาม id พร้อมข้อมูลห้อง (ใช้ในระบบยกเลิกผ่าน LINE)
   async findById(id: number) {
     return this.prisma.booking.findUnique({
       where: { id },
@@ -175,7 +191,6 @@ export class BookingsService {
     });
   }
 
-  // 🟢 10. ยกเลิก booking (ใช้ในระบบยกเลิกผ่าน LINE)
   async cancel(id: number) {
     const updatedBooking = await this.prisma.booking.update({
       where: { id },
@@ -183,7 +198,6 @@ export class BookingsService {
       include: { room: true },
     });
 
-    // 🟢 อัปเดตส่งการ์ดสถานะใหม่กลับเข้า LINE
     if (updatedBooking.lineId) {
       await this.lineService.sendBookingStatusCard(updatedBooking.lineId, {
         roomName: updatedBooking.room.name,
@@ -193,6 +207,110 @@ export class BookingsService {
         date: updatedBooking.date,
         period: updatedBooking.period,
         status: updatedBooking.status,
+        checkInTime: updatedBooking.checkInTime,
+        checkOutTime: updatedBooking.checkOutTime,
+      });
+    }
+
+    return updatedBooking;
+  }
+
+  async checkIn(
+    bookingId: number,
+    userId: number,
+    isAdmin: boolean,
+    _time?: string,
+  ) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('ไม่พบรายการจองนี้');
+    }
+
+    if (!isAdmin && booking.userId !== userId) {
+      throw new ForbiddenException('คุณไม่มีสิทธิ์ทำรายการนี้');
+    }
+
+    if (booking.status !== 'APPROVED') {
+      throw new BadRequestException(
+        'ต้องเป็นรายการที่อนุมัติแล้วเท่านั้นถึงจะเช็คอินได้',
+      );
+    }
+
+    if (booking.checkInTime) {
+      throw new BadRequestException('ทำรายการเข้าห้องไปแล้ว');
+    }
+
+    const updatedBooking = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { checkInTime: new Date() },
+      include: { room: true },
+    });
+
+    // ส่งการ์ด LINE ใหม่ เพื่อแสดงเวลาเข้าห้องเรียน
+    if (updatedBooking.lineId) {
+      await this.lineService.sendBookingStatusCard(updatedBooking.lineId, {
+        roomName: updatedBooking.room.name,
+        category: updatedBooking.room.category,
+        bookingId: updatedBooking.id,
+        day: updatedBooking.day,
+        date: updatedBooking.date,
+        period: updatedBooking.period,
+        status: updatedBooking.status,
+        checkInTime: updatedBooking.checkInTime,
+        checkOutTime: updatedBooking.checkOutTime,
+      });
+    }
+
+    return updatedBooking;
+  }
+
+  async checkOut(
+    bookingId: number,
+    userId: number,
+    isAdmin: boolean,
+    _time?: string,
+  ) {
+    const booking = await this.prisma.booking.findUnique({
+      where: { id: bookingId },
+    });
+
+    if (!booking) {
+      throw new NotFoundException('ไม่พบรายการจองนี้');
+    }
+
+    if (!isAdmin && booking.userId !== userId) {
+      throw new ForbiddenException('คุณไม่มีสิทธิ์ทำรายการนี้');
+    }
+
+    if (!booking.checkInTime) {
+      throw new BadRequestException('ต้องเช็คอินก่อนถึงจะเช็คเอาท์ได้');
+    }
+
+    if (booking.checkOutTime) {
+      throw new BadRequestException('ทำรายการออกห้องไปแล้ว');
+    }
+
+    const updatedBooking = await this.prisma.booking.update({
+      where: { id: bookingId },
+      data: { checkOutTime: new Date() },
+      include: { room: true },
+    });
+
+    // ส่งการ์ด LINE ใหม่ เพื่อแสดงเวลาออกจากห้องเรียน
+    if (updatedBooking.lineId) {
+      await this.lineService.sendBookingStatusCard(updatedBooking.lineId, {
+        roomName: updatedBooking.room.name,
+        category: updatedBooking.room.category,
+        bookingId: updatedBooking.id,
+        day: updatedBooking.day,
+        date: updatedBooking.date,
+        period: updatedBooking.period,
+        status: updatedBooking.status,
+        checkInTime: updatedBooking.checkInTime,
+        checkOutTime: updatedBooking.checkOutTime,
       });
     }
 
