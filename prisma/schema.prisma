@@ -36,9 +36,7 @@ model User {
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   publicPosts     PublicPost[]
-  background      String       @default("#f3f4f6")
-  navbar          String       @default("#111827")
-  header          String       @default("#343a40")
+  themeSettings   Json?
 }
 
 

@@ -1,4 +1,5 @@
 import { Injectable, UnauthorizedException, ConflictException, NotFoundException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { LoginUserDto } from './dto/login-user.dto';
@@ -75,9 +76,7 @@ export class UsersService {
           branch: true,
           role: true,
           picture: true,
-          background: true,
-          navbar: true,
-          header: true,
+          themeSettings: true,
         },
       });
 
@@ -147,6 +146,18 @@ export class UsersService {
     } catch (error) {
       throw new NotFoundException(`ไม่พบผู้ใช้งาน ID: ${id}`);
     }
+  }
+
+  async findById(userId: number) {
+  return this.prisma.user.findUnique({ where: { id: userId } });
+  }
+
+  async updateTheme(userId: number, themeSettings: Record<string, string> | null) {
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: { themeSettings: themeSettings ?? Prisma.JsonNull },
+      select: { id: true, themeSettings: true },
+    });
   }
 
 }

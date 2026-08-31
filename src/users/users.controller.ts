@@ -103,4 +103,10 @@ export class UsersController {
 
   }
 
+  @Patch('me/theme')
+  @UseGuards(AuthGuard('jwt'))
+  async updateTheme(@Req() req, @Body() body: { themeSettings: Record<string, string> | null }) {
+    return this.usersService.updateTheme(req.user.userId, body.themeSettings);
+  }
+
 }
