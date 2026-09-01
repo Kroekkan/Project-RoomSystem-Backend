@@ -95,6 +95,7 @@ export class LineWebhookController {
                 ).toLocaleTimeString('th-TH', {
                   hour: '2-digit',
                   minute: '2-digit',
+                  timeZone: 'Asia/Bangkok',
                 })} น.`,
               },
             ]);
@@ -118,6 +119,7 @@ export class LineWebhookController {
               ).toLocaleTimeString('th-TH', {
                 hour: '2-digit',
                 minute: '2-digit',
+                timeZone: 'Asia/Bangkok',
               })} น.`,
             },
           ]);
@@ -164,6 +166,7 @@ export class LineWebhookController {
                 ).toLocaleTimeString('th-TH', {
                   hour: '2-digit',
                   minute: '2-digit',
+                  timeZone: 'Asia/Bangkok',
                 })} น.`,
               },
             ]);
@@ -187,6 +190,7 @@ export class LineWebhookController {
               ).toLocaleTimeString('th-TH', {
                 hour: '2-digit',
                 minute: '2-digit',
+                timeZone: 'Asia/Bangkok',
               })} น.`,
             },
           ]);
