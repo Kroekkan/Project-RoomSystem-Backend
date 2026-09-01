@@ -66,6 +66,7 @@ export class LineService {
       return new Date(time).toLocaleTimeString('th-TH', {
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: 'Asia/Bangkok',
       });
     };
 
