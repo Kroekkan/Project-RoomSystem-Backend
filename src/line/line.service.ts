@@ -151,7 +151,7 @@ export class LineService {
           contents: [
             {
               type: 'image',
-              url: 'https://project-room-system.vercel.app/images/Generated_lmage_2AOYzMURra3Qdn6c.jpg',
+              url: 'https://project-room-system.vercel.app/assets/Generated_lmage_2AOYzMURra3Qdn6c.jpg',
               size: 'sm',
               aspectRatio: '1:1',
               aspectMode: 'fit',
