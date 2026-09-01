@@ -121,7 +121,7 @@ export class UsersService {
          email: googleUser.email,
          name: googleUser.name,
          picture: googleUser.picture,
-         branch: 'กรุณาใส่สาขา',
+         branch: 'กรุณาเลือกสาขา',
          role: 'USER',
          provider: 'google',
          password: null,
