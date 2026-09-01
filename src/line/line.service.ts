@@ -150,6 +150,14 @@ export class LineService {
           layout: 'vertical',
           contents: [
             {
+              type: 'image',
+              url: 'https://project-room-system.vercel.app/images/Generated_lmage_2AOYzMURra3Qdn6c.jpg',
+              size: 'sm',
+              aspectRatio: '1:1',
+              aspectMode: 'fit',
+              align: 'center',
+            },
+            {
               type: 'text',
               text: 'Roomify',
               size: 'sm',
