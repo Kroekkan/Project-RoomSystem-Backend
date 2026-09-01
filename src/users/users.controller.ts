@@ -121,7 +121,7 @@ export class UsersController {
   @UseGuards(AuthGuard('google'))
   async googleAuthCallback(
     @Req() req,
-    @Res({ passthrough: true }) res: Response,
+    @Res() res: Response,
   ) {
     const googleUser = req.user;
 
@@ -136,16 +136,8 @@ export class UsersController {
       role: user.role,
     });
 
-    res.cookie('access_token', token, {
-      httpOnly: true,
-      secure: true,
-      sameSite: 'none',
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: '/',
-    });
-
-    res.redirect(
-      `${process.env.FRONT_URL}/`,
+    return res.redirect(
+      `${process.env.FRONT_URL}/api/auth/google/callback?token=${encodeURIComponent(token)}`
     );
   }
 
