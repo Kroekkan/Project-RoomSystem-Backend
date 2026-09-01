@@ -58,7 +58,15 @@ export class UsersController {
 
   @Get('me')
   getProfile(@Req() req: Request) {
-    const token = req.cookies?.['access_token'];
+    let token = req.cookies?.['access_token'];
+
+    if (!token) {
+      const authHeader = req.headers.authorization;
+
+      if (authHeader?.startsWith('Bearer ')) {
+        token = authHeader.substring(7);
+      }
+    }
 
     if (!token) {
       throw new UnauthorizedException('ยังไม่ได้เข้าสู่ระบบ');
