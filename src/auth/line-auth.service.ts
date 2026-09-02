@@ -6,7 +6,7 @@ export class LineAuthService {
   // 🟢 ใส่ ?? '' ป้องกันค่าเป็น undefined แก้ ts(2345)
   private readonly clientId = process.env.LINE_LOGIN_CHANNEL_ID ?? '';
   private readonly clientSecret = process.env.LINE_LOGIN_CHANNEL_SECRET ?? '';
-  private readonly callbackUrl = process.env.LINE_LOGIN_CALLBACK_URL;
+  private readonly callbackUrl = process.env.LINE_LOGIN_CALLBACK_URL || 'https://project-roomsystem-backend.onrender.com/auth/line/callback';
 
   getAuthorizationUrl(): string {
     const state = Math.random().toString(36).substring(7);
