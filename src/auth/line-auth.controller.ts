@@ -4,7 +4,7 @@ import { LineAuthService } from './line-auth.service';
 
 @Controller('auth/line')
 export class LineAuthController {
-  private readonly frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  private readonly frontendUrl = process.env.FRONTEND_URL;
 
   constructor(private readonly lineAuthService: LineAuthService) {}
 
