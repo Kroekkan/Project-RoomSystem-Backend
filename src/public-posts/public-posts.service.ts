@@ -4,19 +4,14 @@ import {
   NotFoundException,
   InternalServerErrorException,
 } from '@nestjs/common';
-
 import { PrismaService } from '../prisma/prisma.service';
-
 import { CreatePublicPostDto } from './dto/create-public-post.dto';
 import { UpdatePublicPostDto } from './dto/update-public-post.dto';
-
 import { PostCategory } from '@prisma/client';
-
 import {
   createClient,
   SupabaseClient,
 } from '@supabase/supabase-js';
-
 import { randomUUID } from 'crypto';
 
 type UploadedImageFile = {
@@ -35,6 +30,7 @@ export class PublicPostsService {
     private readonly prisma: PrismaService,
   ) {
     const supabaseUrl = process.env.SUPABASE_URL;
+
     const supabaseServiceRoleKey =
       process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -78,6 +74,8 @@ export class PublicPostsService {
           select: {
             id: true,
             name: true,
+            building: true,
+            category: true,
           },
         },
       },
@@ -111,6 +109,8 @@ export class PublicPostsService {
             select: {
               id: true,
               name: true,
+              building: true,
+              category: true,
             },
           },
         },
@@ -184,7 +184,6 @@ export class PublicPostsService {
           {
             contentType:
               file.mimetype,
-
             upsert: false,
           },
         );
@@ -243,6 +242,7 @@ export class PublicPostsService {
           location:
             dto.location || null,
 
+          // 🟢 ทุกหมวดสามารถผูกกับห้องได้
           roomId:
             dto.roomId ?? null,
 
@@ -270,10 +270,13 @@ export class PublicPostsService {
             },
           },
 
+          // 🟢 ส่งข้อมูลห้องกลับไปครบ
           room: {
             select: {
               id: true,
               name: true,
+              building: true,
+              category: true,
             },
           },
         },
@@ -319,10 +322,13 @@ export class PublicPostsService {
           },
         },
 
+        // 🟢 ส่งข้อมูลห้องกลับไปครบ
         room: {
           select: {
             id: true,
             name: true,
+            building: true,
+            category: true,
           },
         },
       },
