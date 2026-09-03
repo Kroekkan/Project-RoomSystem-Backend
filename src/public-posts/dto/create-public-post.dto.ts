@@ -1,4 +1,12 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsEnum,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
+import { Transform } from 'class-transformer';
 import { PostCategory } from '@prisma/client';
 
 export class CreatePublicPostDto {
@@ -20,13 +28,21 @@ export class CreatePublicPostDto {
   "location"?: string;
 
   @IsOptional()
-  @IsString()
-  "imageUrl"?: string;
-  
+  @Transform(({ value }) => {
+    if (value === undefined || value === null || value === '') {
+      return undefined;
+    }
+
+    return Number(value);
+  })
+  @IsInt()
+  "roomId"?: number;
+
   @IsOptional()
+  @IsString()
   "startDate"?: string;
 
   @IsOptional()
+  @IsString()
   "endDate"?: string;
-
 }
