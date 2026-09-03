@@ -9,8 +9,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     constructor(private prisma: PrismaService) {
         super({
             jwtFromRequest: ExtractJwt.fromExtractors([
+                ExtractJwt.fromAuthHeaderAsBearerToken(), // 🟢 อ่านจาก Authorization: Bearer ก่อน
                 (req: Request) => {
-                    return req?.cookies?.['access_token'] || null;
+                    return req?.cookies?.['access_token'] || null; // fallback เผื่อมี cookie
                 },
             ]),
             secretOrKey: process.env.JWT_SECRET || 'MySuperSecretKey_123456789',
