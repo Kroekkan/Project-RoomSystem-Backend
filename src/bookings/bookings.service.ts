@@ -46,12 +46,22 @@ export class BookingsService {
   }) {
     const existing = await this.prisma.booking.findFirst({
       where: {
-        roomId: data.roomId,
+        roomId: Number(data.roomId),
         date: data.date,
         period: data.period,
-        status: { in: ['PENDING', 'APPROVED'] },
+        status: {
+          in: ['PENDING', 'APPROVED'],
+        },
       },
     });
+
+    console.log('============================');
+    console.log('CREATE BOOKING');
+    console.log('roomId:', data.roomId);
+    console.log('date:', data.date);
+    console.log('period:', data.period);
+    console.log('existing:', existing);
+    console.log('============================');
 
     if (existing) {
       throw new BadRequestException(
