@@ -19,15 +19,29 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     async validate(payload: any) {
-        const user = await this.prisma.user.findUnique({
-            where: { id: payload.userId },
-            select: { id: true, email: true, role: true },
-        });
+    const userId = Number(payload.userId || payload.sub);
 
-        if (!user) {
-            throw new UnauthorizedException('ไม่พบผู้ใช้งานนี้ในระบบ');
-        }
+    if (!userId) {
+        throw new UnauthorizedException('Token ไม่มีข้อมูลผู้ใช้งาน');
+    }
 
-        return { userId: user.id, email: user.email, role: user.role };
+    const user = await this.prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+        id: true,
+        email: true,
+        role: true,
+        },
+    });
+
+    if (!user) {
+        throw new UnauthorizedException('ไม่พบผู้ใช้งานนี้ในระบบ');
+    }
+
+    return {
+        userId: user.id,
+        email: user.email,
+        role: user.role,
+    };
     }
 }
