@@ -244,7 +244,7 @@ export class PublicPostsService {
 
           // 🟢 ทุกหมวดสามารถผูกกับห้องได้
           roomId:
-            dto.roomId ?? null,
+            dto.roomId ? Number(dto.roomId) : null,
 
           imageUrl,
 

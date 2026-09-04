@@ -74,16 +74,15 @@ export class PublicPostsController {
   @UseInterceptors(FileInterceptor('image'))
   create(
     @Body() dto: CreatePublicPostDto,
-
-    @UploadedFile()
-    file: UploadedImageFile,
-
-    @Req()
-    req: RequestWithUser,
+    @UploadedFile() file: UploadedImageFile,
+    @Req() req: RequestWithUser,
   ) {
+    // ป้องกันกรณีที่ jwt เก็บเป็น id หรือ sub
+    const userId = Number(req.user?.userId || (req.user as any)?.id || (req.user as any)?.sub);
+
     return this.publicPostsService.create(
       dto,
-      req.user.userId,
+      userId,
       file,
     );
   }
