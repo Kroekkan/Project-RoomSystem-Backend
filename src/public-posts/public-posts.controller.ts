@@ -94,19 +94,17 @@ export class PublicPostsController {
   @Patch(':id')
   update(
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdatePublicPostDto,
-    @Req() req: RequestWithUser,
-  ) {
-    const userId = Number(
-      req.user?.userId ||
-      (req.user as any)?.id ||
-      (req.user as any)?.sub
-    );
 
+    @Body()
+    dto: UpdatePublicPostDto,
+
+    @Req()
+    req: RequestWithUser,
+  ) {
     return this.publicPostsService.update(
       id,
       dto,
-      userId,
+      req.user.userId,
       req.user.role === 'ADMIN',
     );
   }
@@ -118,17 +116,13 @@ export class PublicPostsController {
   @Delete(':id')
   remove(
     @Param('id', ParseIntPipe) id: number,
-    @Req() req: RequestWithUser,
-  ) {
-    const userId = Number(
-      req.user?.userId ||
-      (req.user as any)?.id ||
-      (req.user as any)?.sub
-    );
 
+    @Req()
+    req: RequestWithUser,
+  ) {
     return this.publicPostsService.remove(
       id,
-      userId,
+      req.user.userId,
       req.user.role === 'ADMIN',
     );
   }
