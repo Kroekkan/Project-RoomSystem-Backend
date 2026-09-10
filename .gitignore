@@ -5,9 +5,12 @@
 
 # Environment variables (มีรหัสผ่าน/secret)
 .env
+.env.*
+!.env.example
 .env.local
 .env.production
 .env.*.local
+.env.docker
 
 # Build output (สร้างใหม่ได้ตอน build)
 dist/
