@@ -26,6 +26,37 @@ export class LineService {
     );
   }
 
+  // ---------- Helper: แปลง period จริงจาก DB ให้ตรงกับ label ที่ผู้ใช้เห็นในตาราง ----------
+  // period 3 ใน DB = ช่วงพัก 30 นาที (ไม่ใช่คาบเรียน)
+  // period 4 เป็นต้นไป ต้องลบ 1 เพื่อให้ตรงกับ "คาบ" ที่แสดงบนตารางฝั่งผู้ใช้
+  private readonly periodClockTimes: Record<number, string> = {
+    1: '08:30 - 09:20',
+    2: '09:20 - 10:10',
+    3: '10:10 - 10:40', // พัก 30 นาที
+    4: '10:40 - 11:30',
+    5: '11:30 - 12:20',
+    6: '12:20 - 13:10',
+    7: '13:10 - 14:00',
+    8: '14:00 - 14:50',
+    9: '14:50 - 15:40',
+    10: '15:40 - 16:30',
+  };
+
+  private getPeriodLabel(rawPeriod: number | string): string {
+    const p = Number(rawPeriod);
+
+    if (p === 3) {
+      return 'พัก 30';
+    }
+
+    return `คาบที่ ${p > 3 ? p - 1 : p}`;
+  }
+
+  private getPeriodClockTime(rawPeriod: number | string): string {
+    const p = Number(rawPeriod);
+    return this.periodClockTimes[p] ?? '-';
+  }
+
   // ---------- ส่วนที่ 1: การ์ดแจ้งสถานะการจอง (พร้อมปุ่มยกเลิก) ----------
   async sendBookingStatusCard(
     lineId: string,
@@ -53,7 +84,6 @@ export class LineService {
     const hasCheckedIn = !!booking.checkInTime;
     const hasCheckedOut = !!booking.checkOutTime;
 
-    // ยกเลิกได้เฉพาะก่อนเข้าห้องเรียนเท่านั้น
     const canCancel =
       booking.status !== 'CANCELLED' &&
       booking.status !== 'REJECTED' &&
@@ -72,7 +102,6 @@ export class LineService {
 
     const footerContents: any[] = [];
 
-    // อนุมัติแล้ว และยังไม่เข้าห้อง → แสดงปุ่มเข้าห้องเรียน
     if (isApproved && !hasCheckedIn && !hasCheckedOut) {
       footerContents.push({
         type: 'button',
@@ -87,7 +116,6 @@ export class LineService {
       });
     }
 
-    // เข้าห้องแล้ว และยังไม่ออก → เปลี่ยนเป็นปุ่มออกจากห้องเรียน
     if (isApproved && hasCheckedIn && !hasCheckedOut) {
       footerContents.push({
         type: 'button',
@@ -102,7 +130,6 @@ export class LineService {
       });
     }
 
-    // แสดงปุ่มยกเลิกเสมอ หากยังไม่ถูกยกเลิกหรือปฏิเสธ
     if (canCancel) {
       footerContents.push({
         type: 'button',
@@ -117,19 +144,8 @@ export class LineService {
       });
     }
 
-    const periodTimes: Record<number, string> = {
-      1: '08:30 - 09:20',
-      2: '09:20 - 10:10',
-      3: '10:40 - 11:30',
-      4: '11:30 - 12:20',
-      5: '12:20 - 13:10',
-      6: '13:10 - 14:00',
-      7: '14:00 - 14:50',
-      8: '14:50 - 15:40',
-      9: '15:40 - 16:30',
-    };
-
-    const periodLabel = `คาบที่ ${booking.period} (${periodTimes[booking.period] ?? '-'})`;
+    // ใช้ helper แทนการต่อ string จาก raw period ตรง ๆ
+    const periodLabel = `${this.getPeriodLabel(booking.period)} (${this.getPeriodClockTime(booking.period)})`;
 
     const formatBookingDate = (date: string) => {
       const [year, month, day] = date.split('-');
@@ -308,7 +324,12 @@ export class LineService {
             { type: 'text', text: '⚠️ ยืนยันการยกเลิก', weight: 'bold', size: 'md', color: '#FF3B30' },
             { type: 'separator' },
             { type: 'text', text: booking.roomName, weight: 'bold', size: 'md', wrap: true, margin: 'md' },
-            { type: 'text', text: `${booking.day} ${booking.date} | คาบที่ ${booking.period}`, size: 'xs', color: '#999999' },
+            {
+              type: 'text',
+              text: `${booking.day} ${booking.date} | ${this.getPeriodLabel(booking.period)}`,
+              size: 'xs',
+              color: '#999999',
+            },
             { type: 'text', text: `รหัสจอง: #${booking.bookingId}`, size: 'xs', color: '#999999' },
             { type: 'text', text: 'ต้องการยกเลิกการจองนี้ใช่หรือไม่?', size: 'sm', margin: 'md', wrap: true },
           ],
