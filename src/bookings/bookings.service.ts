@@ -86,7 +86,6 @@ export class BookingsService {
       include: { room: true },
     });
 
-    // ส่งแจ้งเตือนหาตัวผู้จอง (ถ้ามี lineId)
     if (booking.lineId) {
       try {
         await this.lineService.sendBookingStatusCard(booking.lineId, {
@@ -104,29 +103,6 @@ export class BookingsService {
         console.error(
           'LINE Notification Error (แต่การจองสำเร็จแล้ว):',
           lineErr?.message || lineErr,
-        );
-      }
-    }
-
-    const adminLineId = process.env.ADMIN_LINE_ID;
-    if (adminLineId) {
-      try {
-        await this.lineService.sendAdminBookingNotification(adminLineId, {
-          bookingId: booking.id,
-          userName: booking.userName,
-          userEmail: booking.userEmail,
-          phone: booking.phone,
-          purpose: booking.purpose,
-          roomName: booking.room.name,
-          category: booking.room.category,
-          day: booking.day,
-          date: booking.date,
-          period: booking.period,
-        });
-      } catch (adminErr: any) {
-        console.error(
-          'Admin LINE Notification Error:',
-          adminErr?.message || adminErr,
         );
       }
     }
@@ -283,6 +259,7 @@ export class BookingsService {
       include: { room: true },
     });
 
+    // ส่งการ์ด LINE ใหม่ เพื่อแสดงเวลาเข้าห้องเรียน
     if (updatedBooking.lineId) {
       await this.lineService.sendBookingStatusCard(updatedBooking.lineId, {
         roomName: updatedBooking.room.name,
@@ -332,6 +309,7 @@ export class BookingsService {
       include: { room: true },
     });
 
+    // ส่งการ์ด LINE ใหม่ เพื่อแสดงเวลาออกจากห้องเรียน
     if (updatedBooking.lineId) {
       await this.lineService.sendBookingStatusCard(updatedBooking.lineId, {
         roomName: updatedBooking.room.name,

@@ -261,65 +261,6 @@ export class LineWebhookController {
           ]);
           break;
         }
-
-        case 'admin_approve': {
-          const booking = await this.bookingService.findById(bookingId);
-
-          if (!booking) {
-            await this.lineService.replyMessage(event.replyToken, [
-              { type: 'text', text: 'ไม่พบข้อมูลการจองนี้ครับ' },
-            ]);
-            break;
-          }
-
-          if (booking.status === 'APPROVED') {
-            await this.lineService.replyMessage(event.replyToken, [
-              { type: 'text', text: `การจองรหัส #${bookingId} นี้ได้รับการอนุมัติไปแล้วครับ` },
-            ]);
-            break;
-          }
-
-          // อัปเดตสถานะเป็น APPROVED ผ่าน BookingsService
-          await this.bookingService.updateBookingStatus(bookingId, 'APPROVED');
-
-          await this.lineService.replyMessage(event.replyToken, [
-            {
-              type: 'text',
-              text: `✅ อนุมัติการจองรหัส #${bookingId} ของคุณ ${booking.userName} เรียบร้อยแล้วครับ`,
-            },
-          ]);
-          break;
-        }
-
-        case 'admin_reject': {
-          const booking = await this.bookingService.findById(bookingId);
-
-          if (!booking) {
-            await this.lineService.replyMessage(event.replyToken, [
-              { type: 'text', text: 'ไม่พบข้อมูลการจองนี้ครับ' },
-            ]);
-            break;
-          }
-
-          if (booking.status === 'REJECTED') {
-            await this.lineService.replyMessage(event.replyToken, [
-              { type: 'text', text: `การจองรหัส #${bookingId} นี้ถูกปฏิเสธไปแล้วครับ` },
-            ]);
-            break;
-          }
-
-          // อัปเดตสถานะเป็น REJECTED ผ่าน BookingsService
-          await this.bookingService.updateBookingStatus(bookingId, 'REJECTED');
-
-          await this.lineService.replyMessage(event.replyToken, [
-            {
-              type: 'text',
-              text: `❌ ปฏิเสธการจองรหัส #${bookingId} ของคุณ ${booking.userName} เรียบร้อยแล้วครับ`,
-            },
-          ]);
-          break;
-        }
-
       }
     }
 
